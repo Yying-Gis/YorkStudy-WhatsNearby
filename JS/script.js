@@ -62,7 +62,7 @@ map.on('click', async (e) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ lat, lng })
         });*/
-        const response = await fetch(`https://你的flask-api.onrender.com/analyze?lat=${lat}&lng=${lng}`);
+        const response = await fetch(`https://yorkstudy-whatsnearby.onrender.com/analyze?lat=${lat}&lng=${lng}`);
         if (!response.ok) {
             results.innerHTML = "Server error or no response.";
             return;
