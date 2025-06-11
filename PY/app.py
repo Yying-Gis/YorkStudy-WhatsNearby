@@ -1,3 +1,4 @@
+"""
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import osmnx as ox
@@ -94,3 +95,9 @@ def analyze():
     }
     return jsonify(result)
 
+"""
+import os
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), "Data")
+print(f"Current directory: {os.getcwd()}")
+print(f"DATA_DIR contents: {os.listdir(DATA_DIR)}")
