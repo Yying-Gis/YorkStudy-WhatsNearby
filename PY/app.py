@@ -36,15 +36,15 @@ def load_geojson(category, filename):
         return json.load(f)
 
 # load all data 
-libraries = load_geojson('Facility', 'Libraries.geojson')
-supermarkets = load_geojson('Facility', 'Supermarket.geojson')
-restaurants = load_geojson('Facility', 'dining_venues .geojson')
-stations = load_geojson('Transport', 'stations(4point).geojson')
-bus_stops = load_geojson('Transport', 'multiplestop(multiple point).geojson')
+#libraries = load_geojson('Facility', 'Libraries.geojson')
+#supermarkets = load_geojson('Facility', 'Supermarket.geojson')
+#restaurants = load_geojson('Facility', 'dining_venues .geojson')
+#stations = load_geojson('Transport', 'stations(4point).geojson')
+#bus_stops = load_geojson('Transport', 'multiplestop(multiple point).geojson')
 hospitals = load_geojson('Medical', 'hospital.geojson')
 pharmacies = load_geojson('Medical', 'Pharmacies.geojson')
 gp_surgeries = load_geojson('Medical', 'GP_Surgeries.geojson')
-schools = load_geojson('School', 'Primary_Schools.geojson')
+#schools = load_geojson('School', 'Primary_Schools.geojson')
 
 # load GraphML
 GRAPH_PATH = os.path.join(DATA_DIR, 'york_walk_with_bearing.graphml')
@@ -82,15 +82,15 @@ def analyze():
     lat, lng = data['lat'], data['lng']
     result = {
         'location': [lat, lng],
-        'nearest_library': calculate_nearest(york_graph, lat, lng, libraries),
-        'nearest_supermarket': calculate_nearest(york_graph, lat, lng, supermarkets),
-        'nearest_restaurant': calculate_nearest(york_graph, lat, lng, restaurants),
-        'nearest_station': calculate_nearest(york_graph, lat, lng, stations),
-        'nearest_bus_stop': calculate_nearest(york_graph, lat, lng, bus_stops),
+     #   'nearest_library': calculate_nearest(york_graph, lat, lng, libraries),
+     #   'nearest_supermarket': calculate_nearest(york_graph, lat, lng, supermarkets),
+     #   'nearest_restaurant': calculate_nearest(york_graph, lat, lng, restaurants),
+     #   'nearest_station': calculate_nearest(york_graph, lat, lng, stations),
+     #   'nearest_bus_stop': calculate_nearest(york_graph, lat, lng, bus_stops),
         'nearest_hospital': calculate_nearest(york_graph, lat, lng, hospitals),
         'nearest_pharmacy': calculate_nearest(york_graph, lat, lng, pharmacies),
         'nearest_gp_surgery': calculate_nearest(york_graph, lat, lng, gp_surgeries),
-        'nearest_school': calculate_nearest(york_graph, lat, lng, schools),
+     #   'nearest_school': calculate_nearest(york_graph, lat, lng, schools),
     }
     return jsonify(result)
 
