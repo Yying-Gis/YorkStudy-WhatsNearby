@@ -14,10 +14,17 @@ CORS(app)
 
 @app.route('/')
 
-print("Python version:", sys.version)
-print("os module test:",  print(os.__file__))
-print("Current file path:", __file__)
-print("Data dir path:", os.path.join(os.path.dirname(__file__), "data"))
+def home():
+    return "Hello Render"
+
+if __name__ == '__main__':
+    print("Python version:", sys.version)
+    print("os module test:", os.__file__)
+    print("Current file path:", __file__)
+    print("Data dir path:", os.path.join(os.path.dirname(__file__), "data"))
+    
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
 
 
 # define directory's path
@@ -87,5 +94,3 @@ def analyze():
     }
     return jsonify(result)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
