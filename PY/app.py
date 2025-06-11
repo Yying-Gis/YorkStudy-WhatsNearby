@@ -10,6 +10,8 @@ import os
 app = Flask(__name__)
 
 @app.route("/")
+def hello_world():
+    return libraries
 
 
 if __name__ == '__main__':
@@ -26,8 +28,6 @@ print(f"Data dir path:", os.path.join(os.path.dirname(__file__), "Data"))
 def load_geojson(category, filename):
     with open(os.path.join(DATA_DIR, category, filename)) as f:
         return json.load(f)
-
+    
 # load all data 
 libraries = load_geojson('Facility', 'libraries.geojson')
-def hello_world():
-    return libraries
