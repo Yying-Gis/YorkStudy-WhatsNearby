@@ -1,0 +1,6 @@
+Flask
+Flask-Cors
+osmnx
+networkx
+geopy
+requests
