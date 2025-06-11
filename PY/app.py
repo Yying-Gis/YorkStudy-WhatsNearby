@@ -5,6 +5,7 @@ import json
 import networkx as nx
 from geopy.distance import geodesic
 import os
+import sys
 
 
 
@@ -12,7 +13,7 @@ app = Flask(__name__)
 CORS(app)
 
 @app.route('/')
-import sys
+
 print("Python version:", sys.version)
 print("os module test:",  print(os.__file__))
 print("Current file path:", __file__)
