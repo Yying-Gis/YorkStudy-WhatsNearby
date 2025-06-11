@@ -30,4 +30,4 @@ def load_geojson(category, filename):
         return json.load(f)
     
 # load all data 
-libraries = load_geojson('Facility', 'libraries.geojson')
+libraries = load_geojson('Facility', 'Libraries.geojson')
