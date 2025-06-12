@@ -7,6 +7,7 @@ import os
 import sys
 from functools import lru_cache
 import time
+from shapely.geometry import Point
 
 app = Flask(__name__)
 CORS(app)
@@ -63,11 +64,14 @@ def load_geodata(category, filename):
         return gpd.GeoDataFrame()  # return a empty GeoDataFrame
 
 # Memory-efficient nearest point calculation function
-def calculate_nearest_optimized(graph, orig_lat, orig_lng, gdf):
+def calculate_nearest_optimized(graph, orig_lat, orig_lng, gdf, n_closest=3):
     if gdf.empty:
-        return {'feature': None, 'distance': None, 'walk_time': None}
-    
+        return {'feature': None, 'distance': None, 'walk_time': None, 'path': None}
     orig_node = ox.distance.nearest_nodes(graph, orig_lng, orig_lat)
+    #First filter the n nearest facilities using Euclidean distance
+    gdf['euclidean'] = gdf.geometry.apply(lambda geom: Point(orig_lng, orig_lat).distance(geom))
+    nearest = gdf.nsmallest(n_closest, 'euclidean')
+
     min_dist = float('inf')
     nearest_properties = None
     nearest_path = None
@@ -79,28 +83,30 @@ def calculate_nearest_optimized(graph, orig_lat, orig_lng, gdf):
             lng, lat = point.x, point.y
         else:
             # get the first data if more than one point/polygon
-            lng, lat = point.coords[0][0:2]
-        
+            lng, lat = point.coords[0][0:2]        
         dest_node = ox.distance.nearest_nodes(graph, lng, lat)
         try:
+            path = nx.shortest_path(graph, orig_node, dest_node, weight='length')
             path_length = nx.shortest_path_length(graph, orig_node, dest_node, weight='length')
             if path_length < min_dist:
                 min_dist = path_length
-                nearest_properties = row.drop('geometry').to_dict()
+                nearest_properties = row.drop(['geometry', 'euclidean']).to_dict()
+                nearest_node = dest_node
+                nearest_path = path
         except nx.NetworkXNoPath:
             continue
     
     walk_time = int((min_dist / 80) * 60) if min_dist != float('inf') else None
     if nearest_node is not None:
-        path_nodes = nx.shortest_path(graph, orig_node, nearest_node, weight='length')
-        path_coords = [[graph.nodes[n]['y'], graph.nodes[n]['x']] for n in path_nodes]
+        path_coords = [[graph.nodes[n]['y'], graph.nodes[n]['x']] for n in nearest_path]
     else:
         path_coords = None
     
     return {
         'feature': nearest_properties,
         'distance': round(min_dist) if min_dist != float('inf') else None,
-        'walk_time': walk_time
+        'walk_time': walk_time,
+        'path': path_coords
     }
 
 @app.route('/analyze', methods=['POST'])
