@@ -10,6 +10,7 @@ header {
     text-align: center;
 }
 #map {
+    flex: 2;
     height: 70vh;
     width: 100%;
     border-radius: 8px;
@@ -17,6 +18,7 @@ header {
 }
 .container {
     display: flex;
+    height: calc(100vh - 120px);
     flex-direction: row;
     gap: 20px;
     max-width: 1200px;
@@ -24,20 +26,84 @@ header {
     padding: 20px;
 }
 #sidebar {
-    width: 320px;
+    flex: 1;
+    padding: 1rem;
     min-width: 200px;
-    max-width: 400px;
+    max-width: 350px;
     padding: 10px;
     overflow-y: auto;
     background: #f5f5f5;
     border-radius: 8px;
 }
+.sidebar-results {
+    background: white;
+    padding: 1rem;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.result-item {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+.result-item:last-child {
+    border-bottom: none;
+}
+
+.detail {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.na {
+    color: #aaa;
+}
+
+/* loading status */
+.loading-container {
+    background: white;
+    padding: 1rem;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.progress-bar {
+    background: #f0f0f0;
+    height: 20px;
+    border-radius: 10px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.progress {
+    background: #4CAF50;
+    height: 100%;
+    transition: width 0.5s ease-out;
+}
+
+.loading-message {
+    margin: 5px 0;
+    color: #555;
+}
+.error-message {
+    background: #ffebee;
+    padding: 1rem;
+    border-radius: 5px;
+    color: #c62828;
+}
+
+/* tag */
+.user-location-marker {
+    text-align: center;
+    line-height: 30px;
+}
+
 footer {
     text-align: center;
     padding: 1rem;
     background-color: #333;
     color: white;
 }
+
 @media (max-width: 900px) {
     .container {
         flex-direction: column;

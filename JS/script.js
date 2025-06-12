@@ -46,6 +46,11 @@ async function loadGeoJSONData() {
 }
 let currentPopup = null;
 
+let loadingState = {
+    totalSteps: 5, 
+    currentStep: 0,
+    message: ""
+};
 // onclick event -on map
 map.on('click', async (e) => {
     const lat = e.latlng.lat;
@@ -53,60 +58,117 @@ map.on('click', async (e) => {
     // Clean the map
     mapLayers.routes.clearLayers();
     mapLayers.markers.clearLayers();
+    document.getElementById('accessibility-result').innerHTML = '';
+    updateLoadingState(1, "connecting our server...");
 
-    // Show loading popup at clicked location
-    if (currentPopup) map.closePopup(currentPopup);
-    currentPopup = L.popup({ closeButton: false })
-        .setLatLng([lat, lng])
-        .setContent('Loading...')
-        .openOn(map);
-
-    // Call backend API
+    // Rander path:https://yorkstudy-whatsnearby.onrender.com
     try {
-        const response = await fetch(`https://yorkstudy-whatsnearby.onrender.com/analyze?`,{
+        updateLoadingState(2, "sending the location...");
+        const response = await fetch(`https://yorkstudy-whatsnearby.onrender.com/analyze?`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ lat, lng })
-            });
+        });
+
         if (!response.ok) {
-            results.innerHTML = "Server error or no response.";
+            updateLoadingState(5, "Server error or no response", true);
+            showErrorInSidebar("Server error or no response");
             return;
         }
-        const data = await response.json();
-        // Show result in popup, draw route and tags
-        showAnalysisResultOnMap(lat, lng, data);
 
+        updateLoadingState(3, "Data analysis in progress...");
+        const data = await response.json();
+
+        updateLoadingState(4, "Rendering results...");
+        showAnalysisResultOnMap(lat, lng, data);
+        showResultsInSidebar(data);
+
+        updateLoadingState(5, "Analysis finished!", true);
     } catch (err) {
-        results.innerHTML = "Error fetching accessibility data.";
+        updateLoadingState(5, "Error fetching data: " + err.message, true);
+        showErrorInSidebar("Error fetching data: " + err.message);
     }
 });
 
-function showAnalysisResultOnMap(lat, lng, data) {
-    // Collect result html for popup
-    const { location, nearest_gp_surgery, nearest_hospital, nearest_pharmacy } = data;
+// show result in sidebar
+function showResultsInSidebar(data) {
+    const { location, postcode, nearest_gp_surgery, nearest_hospital, nearest_pharmacy } = data;
+    const sidebar = document.getElementById('accessibility-result');
+    const now = new Date();
+    
     const makeHtml = (facility, type) => {
         if (!facility.feature)
-            return `<b>${type}:</b> <span style="color:#aaa">N/A</span><br>`;
-        return `<b>${type}:</b> ${facility.feature.name || 'N/A'}<br>distance: ${facility.distance || '?'}m Approximate walk: ${facility.walk_time || '?'}分鐘<br>`;
+            return `<div class="result-item"><b>${type}:</b> <span class="na">N/A</span></div>`;
+        return `
+            <div class="result-item">
+                <b>${type}:</b> ${facility.feature.name || 'N/A'}<br>
+                <span class="detail">distance: ${facility.distance || '?'}m</span><br>
+                <span class="detail">Approximate walk: ${facility.walk_time || '?'}min</span>
+            </div>
+        `;
     };
 
-    let html = `<div style="min-width:180px">
-        <b>Analysis results</b><br>
-        your location：<br>
-        <span style="color:#555">${location[0].toFixed(5)}, ${location[1].toFixed(5)}</span><br><hr>
-        ${makeHtml(nearest_gp_surgery, 'GP surgery')}
-        ${makeHtml(nearest_hospital, 'Hospital')}
-        ${makeHtml(nearest_pharmacy, 'Pharmacy')}
-    </div>`;
+    sidebar.innerHTML = `
+        <div class="sidebar-results">
+            <h3>Results of the analysis</h3>
+            <div class="location-info">
+                <b>location:</b><br>
+                <span class="detail">lat/lon: ${location[0].toFixed(5)}, ${location[1].toFixed(5)}</span><br>
+                ${postcode ? `<span class="detail">postcode: ${postcode}</span>` : ''}
+                <small class="detail">Last updated: ${now.toLocaleTimeString()}</small>
+            </div>
+            <hr>
+            ${makeHtml(nearest_gp_surgery, 'GP-surgery')}
+            ${makeHtml(nearest_hospital, 'Hospital')}
+            ${makeHtml(nearest_pharmacy, 'Pharmacy')}
+        </div>
+    `;
+}
 
-    // Show popup
-    if (currentPopup) map.closePopup(currentPopup);
-    currentPopup = L.popup()
-        .setLatLng([lat, lng])
-        .setContent(html)
-        .openOn(map);
+// show error msg in sidebar
+function showErrorInSidebar(message) {
+    const sidebar = document.getElementById('accessibility-result');
+    sidebar.innerHTML = `
+        <div class="error-message">
+            <h3>Error</h3>
+            <p>${message}</p>
+            <p>Please try clicking another location or try again later.。</p>
+        </div>
+    `;
+}
 
-    // User marker
+// update-reload
+function updateLoadingState(step, message, isFinal = false) {
+    loadingState.currentStep = step;
+    loadingState.message = message;
+    
+    const sidebar = document.getElementById('accessibility-result');
+    const progressPercent = (step / loadingState.totalSteps) * 100;
+    
+    if (!sidebar.innerHTML.includes("sidebar-results")) {
+        sidebar.innerHTML = `
+            <div class="loading-container">
+                <h3>Analyzing location...</h3>
+                <div class="progress-bar">
+                    <div class="progress" style="width: ${progressPercent}%"></div>
+                </div>
+                <p class="loading-message">${message}</p>
+                <small>Step ${step}/${loadingState.totalSteps}</small>
+            </div>`
+    };
+    
+    if (isFinal && !sidebar.innerHTML.includes("sidebar-results")) {
+        //show in the sidebar during analysis
+        setTimeout(() => {
+            if (sidebar.innerHTML.includes("Analyzing location...")) {
+                sidebar.innerHTML = '<p>Click a location on the map to analyze.</p>';
+            }
+        }, 2000);
+    }
+}
+
+function showAnalysisResultOnMap(lat, lng, data) {
+    // add tag
     L.marker([lat, lng], {
         icon: L.divIcon({
             className: 'user-location-marker',
@@ -115,8 +177,7 @@ function showAnalysisResultOnMap(lat, lng, data) {
         })
     }).addTo(mapLayers.markers);
 
-    // Optionally, draw route & tag 
-    // asume Flask return data w/ nearest_* w/ path arrtibute，e.g. [[lat, lng], ...]
+    // rendering 
     const facilities = [
         { key: 'nearest_gp_surgery', color: '#3388ff', tag: '🏥', label: 'GP' },
         { key: 'nearest_hospital', color: '#ff3333', tag: '🏨', label: 'Hospital' },
@@ -126,7 +187,6 @@ function showAnalysisResultOnMap(lat, lng, data) {
     facilities.forEach(fac => {
         const facility = data[fac.key];
         if (facility && facility.path && Array.isArray(facility.path) && facility.path.length > 1) {
-            // Draw route
             L.polyline(facility.path, {
                 color: fac.color,
                 weight: 4,
@@ -134,7 +194,6 @@ function showAnalysisResultOnMap(lat, lng, data) {
                 dashArray: '5, 5'
             }).addTo(mapLayers.routes);
 
-            // Add destination tag
             const endPoint = facility.path[facility.path.length - 1];
             L.marker(endPoint, {
                 icon: L.divIcon({
@@ -146,9 +205,6 @@ function showAnalysisResultOnMap(lat, lng, data) {
         }
     });
 
-    // re-load facilities point
+    // reload
     loadGeoJSONData();
 }
-
-// init
-loadGeoJSONData();
