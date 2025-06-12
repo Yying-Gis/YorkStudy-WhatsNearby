@@ -11,60 +11,58 @@ import time
 app = Flask(__name__)
 CORS(app)
 
-# 配置 OSMnx 設定
+# setting OSMnx 
 ox.settings.timeout = 300
 ox.settings.log_console = True
 ox.settings.use_cache = True
 ox.settings.cache_folder = os.path.join(os.path.dirname(__file__), "cache")
 
-@app.route('/')
-def home():
-    return "Hello Render"
+"""@app.route('/')"""
 
-# 定義資料目錄路徑
+# define data irectory
 DATA_DIR = os.path.join(os.path.dirname(__file__), "Data")
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(ox.settings.cache_folder, exist_ok=True)
 
-# 使用 LRU 快取來緩存圖形資料
+# using LRU to get graphml file
 @lru_cache(maxsize=1)
+
 def load_graph():
     GRAPH_PATH = os.path.join(DATA_DIR, 'york_walk_with_bearing.graphml')
     try:
         return ox.load_graphml(GRAPH_PATH)
     except Exception as e:
-        print(f"載入圖形失敗: {e}")
+        print(f"failed forget graphml file: {e}")
         try:
-            # 重試機制
+            # retry
             for _ in range(3):
                 try:
                     york_graph = ox.graph_from_place('York, UK', network_type='walk')
                     ox.save_graphml(york_graph, GRAPH_PATH)
                     return york_graph
                 except Exception as e:
-                    print(f"嘗試 {_+1}/3 失敗: {e}")
+                    print(f"try {_+1}/3 fail: {e}")
                     time.sleep(5)
                     continue
-            raise Exception("無法獲取地圖資料，請稍後再試")
+            raise Exception("Unable to get the graphml file, please try it later ")
         except Exception as e:
-            print(f"創建新圖形失敗: {e}")
+            print(f"Failed to create new graphic: {e}")
             raise
 
-# 按需載入 GeoJSON 資料的函數
+# load geojson
 def load_geodata(category, filename):
     filepath = os.path.join(DATA_DIR, category, filename)
     try:
-        # 使用 Geopandas 讀取並只保留必要欄位
         gdf = gpd.read_file(filepath)
-        # 簡化幾何資料以減少記憶體使用
+        # Simplify geometry to reduce memory usage
         if gdf.crs is None:
             gdf = gdf.set_crs(epsg=4326)
-        return gdf[['geometry']].copy()  # 只保留幾何資料
+        return gdf[['geometry']].copy()  # keep Simplify geometry
     except Exception as e:
-        print(f"載入 {filename} 失敗: {e}")
-        return gpd.GeoDataFrame()  # 返回空的 GeoDataFrame
+        print(f"loading {filename} failure: {e}")
+        return gpd.GeoDataFrame()  # return a empty GeoDataFrame
 
-# 記憶體優化的最近點計算函數
+# Memory-efficient nearest point calculation function
 def calculate_nearest_optimized(graph, orig_lat, orig_lng, gdf):
     if gdf.empty:
         return {'feature': None, 'distance': None, 'walk_time': None}
@@ -72,14 +70,15 @@ def calculate_nearest_optimized(graph, orig_lat, orig_lng, gdf):
     orig_node = ox.distance.nearest_nodes(graph, orig_lng, orig_lat)
     min_dist = float('inf')
     nearest_properties = None
+    nearest_path = None
+    nearest_node = None
     
-    # 批次處理點位
     for _, row in gdf.iterrows():
         point = row['geometry']
         if point.geom_type == 'Point':
             lng, lat = point.x, point.y
         else:
-            # 如果是多點或多邊形，取第一個座標
+            # get the first data if more than one point/polygon
             lng, lat = point.coords[0][0:2]
         
         dest_node = ox.distance.nearest_nodes(graph, lng, lat)
@@ -92,6 +91,12 @@ def calculate_nearest_optimized(graph, orig_lat, orig_lng, gdf):
             continue
     
     walk_time = int((min_dist / 80) * 60) if min_dist != float('inf') else None
+    if nearest_node is not None:
+        path_nodes = nx.shortest_path(graph, orig_node, nearest_node, weight='length')
+        path_coords = [[graph.nodes[n]['y'], graph.nodes[n]['x']] for n in path_nodes]
+    else:
+        path_coords = None
+    
     return {
         'feature': nearest_properties,
         'distance': round(min_dist) if min_dist != float('inf') else None,
@@ -105,7 +110,7 @@ def analyze():
         lat, lng = data['lat'], data['lng']
         graph = load_graph()
         
-        # 按需載入需要的資料集
+        # loading the result
         result = {
             'location': [lat, lng],
             'nearest_hospital': calculate_nearest_optimized(
