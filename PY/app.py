@@ -21,19 +21,23 @@ ox.settings.cache_folder = os.path.join(os.path.dirname(__file__), "cache")
 
 """@app.route('/')"""
 
-# define data irectory
+# define data directory
 DATA_DIR = os.path.join(os.path.dirname(__file__), "Data")
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(ox.settings.cache_folder, exist_ok=True)
+TRANSPORT_DIR = os.path.join(DATA_DIR, "Transport")
+#FACILITY_DIR = os.path.join(DATA_DIR, "Facility") #TBC
+#MEDICAL_DIR = os.path.join(DATA_DIR, "Medical")
+#EDUCATION_DIR = os.path.join(DATA_DIR, "school")   #TBC
 
 # using LRU to get graphml file
 @lru_cache(maxsize=1)
 
 def load_graph():
-    GRAPH_PATH = os.path.join(DATA_DIR, 'york_walk_with_bearing.graphml')
+    GRAPH_PATH = os.path.join(TRANSPORT_DIR, 'york_walk_with_bearing.graphml')
     try:
         walk_Graph = ox.load_graphml(GRAPH_PATH)
-        # 簡化圖形 - 只保留必要屬性
+        #simplify graph
         walk_Graph = ox.utils_graph.get_undirected(walk_Graph)
         for _, _, data in walk_Graph.edges(data=True):
             for attr in list(data.keys()):
