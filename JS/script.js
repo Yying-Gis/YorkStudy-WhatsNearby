@@ -64,8 +64,9 @@ map.on('click', async (e) => {
     // Rander path:https://yorkstudy-whatsnearby.onrender.com
     try {
         updateLoadingState(2, "sending the location...");
-        const response = await fetch(`https://yorkstudy-whatsnearby.onrender.com/analyze?`, {
+        const response = await fetch(`https://yorkstudy-whatsnearby.onrender.com/analyze`, {
             method: 'POST',
+            mode: 'cors',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ lat, lng })
         });
@@ -132,7 +133,7 @@ function showErrorInSidebar(message) {
         <div class="error-message">
             <h3>Error</h3>
             <p>${message}</p>
-            <p>Please try clicking another location or try again later.。</p>
+            <p>Please try clicking another location or try again later.</p>
         </div>
     `;
 }

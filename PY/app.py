@@ -13,6 +13,13 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
+CORS(app, resources={
+    r"/analyze": {
+        "origins": ["https://yying-gis.github.io"],
+        "methods": ["POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 # setting OSMnx 
 ox.settings.timeout = 300
 ox.settings.log_console = True
@@ -146,7 +153,7 @@ def analyze():
             'nearest_pharmacy': get_nearest('Medical', 'Pharmacies.geojson'),
             'nearest_gp_surgery': get_nearest('Medical', 'GP_Surgeries.geojson'),
         }
-        return jsonify(result)
+        return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
